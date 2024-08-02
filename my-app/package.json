@@ -1,0 +1,29 @@
+{
+  "name": "my-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@lordicon/react": "^1.6.0",
+    "@nextui-org/react": "^2.4.6",
+    "boxicons": "^2.1.4",
+    "framer-motion": "^11.3.21",
+    "lord-icon-element": "^4.1.2",
+    "lottie-web": "^5.12.2",
+    "next": "14.2.5",
+    "react": "^18",
+    "react-dom": "^18",
+    "styled-components": "^6.1.12"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1"
+  }
+}
