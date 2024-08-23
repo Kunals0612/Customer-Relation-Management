@@ -1,14 +1,15 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const port = 3001;
-const json = require("body-parser/lib/types/json");
-const mysql = require("mysql2");
+const mysql = require("mysql2/promise");
 
-app.use(express.json());
+const port = 3001;
+
+app.use(express.json()); // Parses incoming JSON requests and puts the parsed data in req.body
 app.use(cors());
+
 // Create a connection to the database
-const connection = mysql.createConnection({
+const connection = mysql.createPool({
   host: "localhost",
   user: "root",
   password: "Kunals#2004",
@@ -16,29 +17,38 @@ const connection = mysql.createConnection({
 });
 
 // Connect to the database
-connection.connect((err) => {
-  if (err) {
-    console.error("Error connecting to the database:", err.stack);
-    return;
-  }
-  console.log("Connected to the database as id " + connection.threadId);
-});
+// connection.connect((err) => {
+//   if (err) {
+//     console.error("Error connecting to the database:", err.stack);
+//     return;
+//   }
+//   console.log("Connected to the database as id " + connection.threadId);
+// });
+
 app.post("/signup", async (req, res) => {
   try {
-    const { name, shop_name, phone_no, email, password } = req.body;
-    const result = await connection.query(
-      "INSERT INTO Shops (name,shop_name,phone_no,email,password) VALUES ($1, $2, $3, $4) ",
-      [name, shop_name, phone_no, email, password]
-    );
-    if (result.rowCount === 0) {
-      return res.status(400).send("Failed to Send the data");
+    const { Name, Shop_name, Phone, Email, Password } = req.body;
+    const [rows] = await connection.query("SELECT * FROM Shops WHERE email = ?",[Email]);
+    console.log(rows);
+    if(rows.length > 0)
+    {
+      return res.status(400).json("Email id already exists");
     }
-    res.send(200).send("Data inserted successfully");
+    const query = "INSERT INTO Shops (name, shop_name, phone_no, email, password) VALUES (?, ?, ?, ?, ?)";
+    connection.query(query, [Name, Shop_name, Phone, Email, Password], (err, result) => {
+      if (err) {
+        console.error("Error inserting data: ", err);
+        return res.status(500).json("Internal Server Error");
+      }
+
+      res.status(200).json("Data inserted successfully");
+    });
   } catch (err) {
-    console.log(err);
-    res.status(500).send("Internal Server Error");
+    console.error("Error during signup: ", err);
+    res.status(500).json("Internal Server Error");
   }
 });
+
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -64,4 +74,5 @@ app.post("/login", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
+
 module.exports = connection;

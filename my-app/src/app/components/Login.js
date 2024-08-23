@@ -1,4 +1,6 @@
+'use client'
 import React from "react";
+import { useState } from "react";
 import { Input } from "@nextui-org/react";
 import { Button, ButtonGroup } from "@nextui-org/button";
 import {
@@ -11,6 +13,8 @@ import {
 } from "@nextui-org/react";
 function Login() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [Email, setEmail] = useState(null);
+  const [Password, setPassword] = useState(null);
   return (
     <React.Fragment>
       <Button color="primary" size="lg" onPress={onOpen}>
@@ -26,8 +30,8 @@ function Login() {
                     <h2 className="text-center text-2xl m-[2vw]">LOGIN FORM</h2>
                     <form className="m-[1vw]">
                       <div className="flex flex-col gap-7">
-                        <Input type="email" label="Email" />
-                        <Input type="password" label="password" />
+                        <Input type="email" label="Email" onClick={(e)=>setEmail(e.target.value)}/>
+                        <Input type="password" label="password" onClick={(e)=>setPassword(e.target.value)}/>
                         <Button size="lg"  color="primary">
                           Login
                         </Button>
