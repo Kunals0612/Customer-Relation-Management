@@ -2,9 +2,9 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const mysql = require("mysql2/promise");
-
+const bcrypt = require("bcrypt");
 const port = 3001;
-
+const saltRounds = 10;
 app.use(express.json()); // Parses incoming JSON requests and puts the parsed data in req.body
 app.use(cors());
 
@@ -28,20 +28,33 @@ const connection = mysql.createPool({
 app.post("/signup", async (req, res) => {
   try {
     const { Name, Shop_name, Phone, Email, Password } = req.body;
-    const [rows] = await connection.query("SELECT * FROM Shops WHERE email = ?",[Email]);
+    const [rows] = await connection.query(
+      "SELECT * FROM Shops WHERE email = ?",
+      [Email]
+    );
     console.log(rows);
-    if(rows.length > 0)
-    {
+    if (rows.length > 0) {
       return res.status(400).json("Email id already exists");
     }
-    const query = "INSERT INTO Shops (name, shop_name, phone_no, email, password) VALUES (?, ?, ?, ?, ?)";
-    connection.query(query, [Name, Shop_name, Phone, Email, Password], (err, result) => {
-      if (err) {
-        console.error("Error inserting data: ", err);
-        return res.status(500).json("Internal Server Error");
+    bcrypt.hash(Password, saltRounds, async (err, hash) => {
+      if(err){
+         return res.status(500).json("Error in encryption");
       }
-
+      else{
+      const query =
+        "INSERT INTO Shops (name, shop_name, phone_no, email, password) VALUES (?, ?, ?, ?, ?)";
+      connection.query(
+        query,
+        [Name, Shop_name, Phone, Email, hash],
+        (err, res) => {
+          if (err) {
+            console.error("Error inserting data: ", err);
+            return res.status(500).json("Internal Server Error");
+          }
+        }
+      );
       res.status(200).json("Data inserted successfully");
+    }
     });
   } catch (err) {
     console.error("Error during signup: ", err);
@@ -51,23 +64,40 @@ app.post("/signup", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const result = await connection.query(
-      "SELECT * FROM Shops WHERE email = $1",
-      [email]
+    console.log("received");
+    const { Email, Password } = req.body;
+    console.log(Email, Password);
+    const [rows] = await connection.query(
+      "SELECT * FROM Shops WHERE email = ?",
+      [Email]
     );
-    if (result.rowCount == 0) {
-      res.status(400).send("Enter Valid Email Id");
+    console.log("Rows", rows);
+    if (rows.length == 0) {
+      return res.status(400).json("Email id is not validated sign up first");
     }
-    const user = result[0];
-
-    if (user.password != password) {
-      res.status(404).send("Incorrect Password");
-    }
-    res.redirect('/dashboard');
-
+    const user = rows[0];
+    const hashedPass = user.password;
+    console.log(hashedPass);
+    console.log(typeof user);
+    console.log("Users: ", user);
+    console.log("Password is: ", hashedPass);
+    bcrypt.compare(Password, hashedPass, (err, result) => {
+      if(err){
+        console.log("Error comparing password: ", err);
+        return res.status(500).json("Error in comparing password");
+      }else{
+        if(result)
+        {
+          console.log("Successful");
+          return res.status(200).json("Login Successful");
+        }
+        else{
+          return res.status(404).json("Incorrect Password");
+        }
+      }
+    })
   } catch (err) {
-    return res.status(500).send("Internal Server Error");
+    return res.status(500).json("Internal Server Error");
   }
 });
 

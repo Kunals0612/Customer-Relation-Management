@@ -21,11 +21,11 @@ function SignUp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validate(Email)) {
+    
+    if (!validate(Name,Shop_name,Phone,Email,Password, confirmPass)) {
       return; // Exit if email is invalid
     }
-
+    console.log("Hello");
     try {
       const response = await fetch("http://localhost:3001/signup", {
         method: "POST",
@@ -54,11 +54,11 @@ function SignUp() {
     }
   };
 
-  const validate = (email) => {
+  const validate = (name,shop,phone,email,password) => {
     let error = "";
 
-    if (!email) {
-      error = "Email is required";
+    if (!email || !name || !shop || !phone || !password || !confirmPass) {
+      error = "Fill all the details in the form";
     } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(email)) {
       error = "Invalid email address";
     }
@@ -90,31 +90,37 @@ function SignUp() {
                           type="text"
                           label="Name"
                           onChange={(e) => setName(e.target.value)}
+                          required
                         />
                         <Input
                           type="text"
                           label="Shop Name"
                           onChange={(e) => setShop_name(e.target.value)}
+                          required
                         />
                         <Input
                           type="text"
                           label="Phone No"
                           onChange={(e) => setPhone(e.target.value)}
+                          required
                         />
                         <Input
                           type="email"
                           label="Email"
                           onChange={(e) => setEmail(e.target.value)}
+                          required
                         />
                         <Input
                           type="password"
                           label="Password"
                           onChange={(e) => setPassword(e.target.value)}
+                          required
                         />
                         <Input
                           type="password"
                           label="Confirm Password"
                           onChange={(e) => setConfirmPass(e.target.value)}
+                          required
                         />
                         <Button
                           size="lg"
