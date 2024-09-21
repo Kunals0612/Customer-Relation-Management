@@ -5,7 +5,7 @@ const mysql = require("mysql2/promise");
 const bcrypt = require("bcrypt");
 const port = 3001;
 const saltRounds = 10;
-app.use(express.json()); // Parses incoming JSON requests and puts the parsed data in req.body
+app.use(express.json()); 
 app.use(cors());
 
 // Create a connection to the database
@@ -77,10 +77,11 @@ app.post("/login", async (req, res) => {
     }
     const user = rows[0];
     const hashedPass = user.password;
-    console.log(hashedPass);
-    console.log(typeof user);
-    console.log("Users: ", user);
-    console.log("Password is: ", hashedPass);
+    // to debug
+    // console.log(hashedPass);  
+    // console.log(typeof user); 
+    // console.log("Users: ", user);
+    // console.log("Password is: ", hashedPass);
     bcrypt.compare(Password, hashedPass, (err, result) => {
       if(err){
         console.log("Error comparing password: ", err);

@@ -33,7 +33,7 @@ function Login() {
         body: JSON.stringify({
           Email:Email,
           Password: Password,
-        }),
+        }), 
       });
       console.log(Email);
       console.log(Password);
