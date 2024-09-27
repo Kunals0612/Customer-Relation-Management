@@ -3,7 +3,6 @@ const app = express();
 const cors = require("cors");
 const mysql = require("mysql2/promise");
 const bcrypt = require("bcrypt");
-const jwt = require('jsonwebtoken');
 const port = 3001;
 const saltRounds = 10;
 app.use(express.json()); 
@@ -16,8 +15,6 @@ const connection = mysql.createPool({
   password: "Kunals#2004",
   database: "Kunal",
 });
-
-const SECRET_KEY = "sendnudes";
 
 // Connect to the database
 // connection.connect((err) => {
@@ -65,17 +62,6 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-const authenticateJWT = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Unauthorized' });
-
-  jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Forbidden' });
-    req.user = user;
-    next();
-  });
-};
-
 app.post("/login", async (req, res) => {
   try {
     console.log("received");
@@ -87,46 +73,37 @@ app.post("/login", async (req, res) => {
     );
     console.log("Rows", rows);
     if (rows.length == 0) {
-      return res.status(404).json("Email id is not validated, sign up first");
+      return res.status(400).json("Email id is not validated sign up first");
     }
-
     const user = rows[0];
     const hashedPass = user.password;
-
+    // to debug
+    // console.log(hashedPass);  
+    // console.log(typeof user); 
+    // console.log("Users: ", user);
+    // console.log("Password is: ", hashedPass);
     bcrypt.compare(Password, hashedPass, (err, result) => {
-      if (err) {
+      if(err){
         console.log("Error comparing password: ", err);
         return res.status(500).json("Error in comparing password");
-      }
-
-      if (result) {
-        console.log("Password matched, generating token...");
-        
-        try {
-          const token = jwt.sign({ username: user.email }, SECRET_KEY, { expiresIn: '1h' });
-          console.log("Token has been generated:", token);
-          return res.json({ token });
-        } catch (tokenError) {
-          console.log("Error generating token: ", tokenError);
-          return res.status(500).json("Error generating token");
+      }else{
+        if(result)
+        {
+          console.log("Successful");
+          res.redirect("/Dashboard");
+          return res.status(200).json("Login Successful");
         }
-
-      } else {
-        return res.status(400).json("Incorrect Password");
+        else{
+          return res.status(404).json("Incorrect Password");
+        }
       }
-    });
+    })
   } catch (err) {
-    console.log("Internal Server Error: ", err);
     return res.status(500).json("Internal Server Error");
   }
+  
 });
 
-app.get("/err404",(req,res)=>{
-  res.send("<p> Authenticate First </p>");
-})
-app.get('/Dashboard', authenticateJWT, (req,res) => {
-  return res.status(200).json("OKKK");
-})
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });

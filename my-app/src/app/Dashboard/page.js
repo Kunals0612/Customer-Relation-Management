@@ -1,9 +1,11 @@
+'use client'
 import {Navbar, NavbarBrand, NavbarContent, NavbarItem, Link, Button} from "@nextui-org/react";
 import {Input} from "@nextui-org/react";
+import withAuth from "../hoc/withAuth";
 
 
-export default function Page() {
-  return (
+function Page() {
+  return (  
     <>
     <Navbar isBordered>
       <NavbarBrand>
@@ -42,3 +44,4 @@ export default function Page() {
 
   );
 }
+export default withAuth(Page);
