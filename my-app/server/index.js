@@ -65,16 +65,16 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-const authenticateJWT = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+// const authenticateJWT = (req, res, next) => {
+//   const token = req.headers.authorization?.split(' ')[1];
+//   if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
-  jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Forbidden' });
-    req.user = user;
-    next();
-  });
-};
+//   jwt.verify(token, SECRET_KEY, (err, user) => {
+//     if (err) return res.status(403).json({ message: 'Forbidden' });
+//     req.user = user;
+//     next();
+//   });
+// };
 
 app.post("/login", async (req, res) => {
   try {
@@ -103,7 +103,7 @@ app.post("/login", async (req, res) => {
         console.log("Password matched, generating token...");
         
         try {
-          const token = jwt.sign({ username: user.email }, SECRET_KEY, { expiresIn: '1h' });
+          const token = jwt.sign({ username: user.shop_name, useremail: user.email}, SECRET_KEY, { expiresIn: '1h' });
           console.log("Token has been generated:", token);
           return res.json({ token });
         } catch (tokenError) {
@@ -124,9 +124,9 @@ app.post("/login", async (req, res) => {
 app.get("/err404",(req,res)=>{
   res.send("<p> Authenticate First </p>");
 })
-app.get('/Dashboard', authenticateJWT, (req,res) => {
-  return res.status(200).json("OKKK");
-})
+// app.get('/Dashboard', authenticateJWT, (req,res) => {
+//   return res.status(200).json("OKKK");
+// })
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
