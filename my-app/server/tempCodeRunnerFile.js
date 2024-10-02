@@ -68,7 +68,7 @@ app.post("/login", async (req, res) => {
     const { Email, Password } = req.body;
     console.log(Email, Password);
     const [rows] = await connection.query(
-      "SELECT * FROM Shops WHERE email = ?",
+      "SELECT * FROM Shop WHERE email = ?",
       [Email]
     );
     console.log("Rows", rows);
