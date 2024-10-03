@@ -9,6 +9,13 @@ const saltRounds = 10;
 app.use(express.json()); 
 app.use(cors());
 
+app.use(express.urlencoded({extended : true}));
+
+require('dotenv').config();
+
+const pass1 = process.env.password; 
+
+
 // Create a connection to the database
 const connection = mysql.createPool({
   host: "localhost",
@@ -68,14 +75,25 @@ app.post("/signup", async (req, res) => {
 
 const authenticateJWT = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+  console.log("Token received: ", token); // Debugging token received
+
+  if (!token) {
+    console.log("No token found in request headers");
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
 
   jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Forbidden' });
-    req.user = user; 
+    if (err) {
+      console.log("JWT verification failed:", err);
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    console.log("Decoded JWT token:", user); 
+    req.user = user;
+    console.log("User authenticated:", user); // Debugging successful authentication
     next();
   });
 };
+
 
 app.post("/login", async (req, res) => {
   try {
@@ -94,6 +112,9 @@ app.post("/login", async (req, res) => {
     const user = rows[0];
     const hashedPass = user.Password;
 
+    console.log(user.Shop_id);
+
+
     bcrypt.compare(Password, hashedPass, (err, result) => {
       if (err) {
         console.log("Error comparing password: ", err);
@@ -104,7 +125,11 @@ app.post("/login", async (req, res) => {
         console.log("Password matched, generating token...");
         
         try {
-          const token = jwt.sign({ shop_id:user.Shop_id,username: user.shop_name, useremail: user.email}, SECRET_KEY, { expiresIn: '1h' });
+          const token = jwt.sign(
+            { shop_id: user.Shop_id, username: user.Shop_name, useremail: user.Email },
+            SECRET_KEY,
+            { expiresIn: '1h' }
+          );
           console.log("Token has been generated:", token);
           return res.json({ token });
         } catch (tokenError) {
@@ -122,15 +147,32 @@ app.post("/login", async (req, res) => {
   }
 });
 
+
 app.post("/addCustomer", authenticateJWT, async (req, res) => {
   try {
-    const {Customer_name, Customer_ph_no, Customer_email,Item_id,Quantity, Price } = req.body;
-    const Shop_id = req.user.shop_id; 
+    const { Customer_name, Customer_ph_no, Customer_email, Item_id, Quantity, Price } = req.body;
+    const shop_id = req.user.shop_id;
 
-    const [customerRows] = await connection.query(
-      "SELECT Customer_id FROM Customer WHERE Customer_email = ?",
-      [Customer_email]
-    );
+    try {
+      // Insert customer into the Customer table
+      const query = "INSERT INTO Customer (Customer_id, Shop_id, Customer_name, Customer_ph_no, Customer_email) VALUES (?, ?, ?, ?, ?)";
+      const [result] = await connection.query(query, [null, shop_id, Customer_name, Customer_ph_no, Customer_email]);
+      //res.status(201).json({ message: "Customer added successfully", customerId: result.insertId });
+    } catch (err) {
+      console.error("Error inserting customer: ", err);
+      return res.status(500).json("Error inserting customer into the database");
+    }
+
+    let customerRows;
+    try {
+      // Fetch the customer ID from the Customer table
+      const customerQuery = "SELECT Customer_id FROM Customer WHERE Customer_email = ?";
+      [customerRows] = await connection.query(customerQuery, [Customer_email]);
+      
+    } catch (err) {
+      console.error("Error fetching customer: ", err);
+      return res.status(500).json("Error fetching customer from the database");
+    }
 
     if (customerRows.length === 0) {
       return res.status(404).json({ message: "Customer not found" });
@@ -138,26 +180,35 @@ app.post("/addCustomer", authenticateJWT, async (req, res) => {
 
     const Customer_id = customerRows[0].Customer_id;
 
-    const query = 
-      "INSERT INTO Customer (Customer_id, Shop_id, Customer_name, Customer_ph_no, Customer_email) VALUES (?, ?, ?, ?, ?)";
+    try {
+      // Insert purchase into the Purchase table
+      const purchaseQuery = "INSERT INTO Purchase (Shop_id, Customer_id) VALUES (?, ?)";
+      const [purchaseResult] = await connection.query(purchaseQuery, [shop_id, Customer_id]);
+      //res.status(201).json({ message: "Purchase added successfully" });
+    } catch (err) {
+      console.error("Error inserting purchase: ", err);
+      return res.status(500).json("Error inserting purchase into the database");
+    }
 
-    const [result] = await connection.query(query, [null, Shop_id, Customer_name, Customer_ph_no, Customer_email]);
-
-    const purchaseItemQuery = 
-      "INSERT INTO Purchase_item (Item_id, Quantity, Purchase_amount) VALUES (?, ?, ?)";
-
-    const [purchaseItemResult] = await connection.query(purchaseItemQuery, [Item_id, Quantity, Price]);
-
-    const purchaseQuery = "INSERT INTO Purchase (Shop_id, Customer_id) VALUES (?, ?)";
-    const [purchaseResult] = await connection.query(purchaseQuery, [Shop_id, Customer_id]);
-
-    res.status(201).json({ message: "Customer added successfully", customerId: result.insertId });
-    
+    try {
+      // Insert purchase item into the Purchase_item table
+      const purchaseItemQuery = "INSERT INTO Purchase_item (Item_id, Quantity, Purchase_amount) VALUES (?, ?, ?)";
+      const [purchaseItemResult] = await connection.query(purchaseItemQuery, [Item_id, Quantity, Price]);
+      res.status(201).json({ message: "Purchase Item added" });
+    } catch (err) {
+      console.error("Error inserting purchase item: ", err);
+      return res.status(500).json("Error inserting purchase item into the database");
+    }
   } catch (err) {
     console.error("Error adding customer: ", err);
     res.status(500).json("Internal Server Error");
   }
+
+    
+
+    
 });
+
 
 
 app.post("/getCustomersByItem", async (req, res) => {
