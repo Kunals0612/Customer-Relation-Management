@@ -4,6 +4,7 @@ const cors = require("cors");
 const mysql = require("mysql2/promise");
 const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const port = 3001;
 const saltRounds = 10;
 app.use(express.json()); 
@@ -20,7 +21,7 @@ const pass1 = process.env.password;
 const connection = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "",
+  password: "newpassword",
   database: "dbmsl",
 });
 
@@ -203,17 +204,12 @@ app.post("/addCustomer", authenticateJWT, async (req, res) => {
     console.error("Error adding customer: ", err);
     res.status(500).json("Internal Server Error");
   }
-
-    
-
     
 });
 
-
-
 app.post("/getCustomersByItem", async (req, res) => {
   try {
-    const { item_name } = req.body;
+    const { item_name } = req.body; 
 
     if (!item_name) {
       return res.status(400).json("Item name is required");
@@ -238,6 +234,78 @@ app.post("/getCustomersByItem", async (req, res) => {
 
   } catch (err) {
     console.error("Error fetching customers: ", err);
+    res.status(500).json("Internal Server Error");
+  }
+});
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail', 
+  auth: {
+    user: 'justforchess247@gmail.com',  
+    pass: 'xmzk fbes azbm fbug',  
+  },
+});
+
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+app.post("/sendMailsToCustomersByItem", async (req, res) => {
+  try {
+    const { item_name } = req.body;
+
+    if (!item_name) {
+      return res.status(400).json("Item name is required");
+    }
+
+    const query = `
+      SELECT c.Customer_id, c.Customer_name, c.Customer_email, p.Purchase_id, i.Item_name
+      FROM Customer c
+      JOIN Purchase p ON c.Customer_id = p.Customer_id
+      JOIN Purchase_item pi ON p.Purchase_id = pi.Purchase_id
+      JOIN Item i ON pi.Item_id = i.Item_id
+      WHERE i.Item_name = ?;
+    `;
+
+    const [customers] = await connection.query(query, [item_name]);
+    console.log(customers);
+
+    if (customers.length === 0) {
+      return res.status(404).json("No customers found for this item");
+    }
+
+    const emailPromises = customers.map((customer) => {
+      const email = customer.Customer_email;
+
+
+      if (!isValidEmail(email)) {
+        console.error(`Invalid email found: ${email}`);
+        return Promise.resolve(); 
+      }
+
+      const mailOptions = {
+        from: 'justforchess247@gmail.com',
+        to: email, 
+        subject: `Thank you for purchasing ${item_name}`,
+        text: `Dear ${customer.Customer_name},\n\nThank you for purchasing ${item_name}! We hope you enjoy the product.\n\nBest regards,\nYour Company`, 
+      };
+
+      console.log(`Sending email to: ${email}`);
+      console.log(mailOptions);
+
+      return transporter.sendMail(mailOptions)
+        .then(info => console.log('Email sent: ' + info.response))
+        .catch(err => console.error("Error sending email: ", err));
+    });
+
+
+    await Promise.all(emailPromises);
+
+    res.status(200).json("Emails sent to all customers successfully!");
+
+  } catch (err) {
+    console.error("Error sending emails: ", err);
     res.status(500).json("Internal Server Error");
   }
 });
