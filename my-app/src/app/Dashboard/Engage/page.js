@@ -60,7 +60,7 @@ function page() {
     </Navbar>
     <div className="flex w-[20vw] flex-wrap md:flex-nowrap gap-10 ml-[40vw] mt-[7vw] flex-col">
       <Input type="text" label="Name" placeholder="Enter Item Name" onChange={(e) => {setItemName(e.target.value)}}/>
-      <Input type="text" label="Message" placeholder="Enter Message" onCanPlay={(e)=>{setMessage(e.target.value)}}/>
+      <Input type="text" label="Message" placeholder="Enter Message" onChange={(e)=>{setMessage(e.target.value)}}/>
       <Button color="primary" onClick={handleSubmit}>
           Send Email
     </Button>

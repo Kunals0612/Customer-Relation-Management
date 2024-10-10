@@ -20,7 +20,7 @@ const pass1 = process.env.password;
 const connection = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "Kunals#2004",
+  password: "newpassword",
   database: "dbmsl",
 });
 
@@ -74,7 +74,7 @@ app.post("/signup", async (req, res) => {
 
 const authenticateJWT = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
-  console.log("Token received: ", token); // Debugging token received
+  console.log("Token received: ", token); 
 
   if (!token) {
     console.log("No token found in request headers");
@@ -88,7 +88,7 @@ const authenticateJWT = (req, res, next) => {
     }
     console.log("Decoded JWT token:", user);
     req.user = user;
-    console.log("User authenticated:", user); // Debugging successful authentication
+    console.log("User authenticated:", user);
     next();
   });
 };
@@ -188,7 +188,7 @@ app.post("/addCustomer", authenticateJWT, async (req, res) => {
       Price
     );
     try {
-      // Insert customer into the Customer table
+      
       const query =
         "INSERT INTO Customer (Shop_id, Customer_name, Customer_ph_no, Customer_email) VALUES (?, ?, ?, ?)";
       const [result] = await connection.query(query, [
@@ -198,7 +198,7 @@ app.post("/addCustomer", authenticateJWT, async (req, res) => {
         Customer_email,
       ]);
       console.log(result);
-      //res.status(201).json({ message: "Customer added successfully", customerId: result.insertId });
+      
     } catch (err) {
       console.error("Error inserting customer: ", err);
       return res.status(500).json("Error inserting customer into the database");
@@ -206,7 +206,7 @@ app.post("/addCustomer", authenticateJWT, async (req, res) => {
 
     let customerRows;
     try {
-      // Fetch the customer ID from the Customer table
+      
       const customerQuery =
         "SELECT Customer_id FROM Customer WHERE Customer_email = ?";
       [customerRows] = await connection.query(customerQuery, [Customer_email]);
@@ -222,21 +222,21 @@ app.post("/addCustomer", authenticateJWT, async (req, res) => {
     const Customer_id = customerRows[0].Customer_id;
 
     try {
-      // Insert purchase into the Purchase table
+  
       const purchaseQuery =
         "INSERT INTO Purchase (Shop_id, Customer_id) VALUES (?, ?)";
       const [purchaseResult] = await connection.query(purchaseQuery, [
         shop_id,
         Customer_id,
       ]);
-      //res.status(201).json({ message: "Purchase added successfully" });
+      
     } catch (err) {
       console.error("Error inserting purchase: ", err);
       return res.status(500).json("Error inserting purchase into the database");
     }
 
     try {
-      // Insert purchase item into the Purchase_item table
+      
       const purchaseItemQuery =
         "INSERT INTO Purchase_item (Item_id, Quantity, Purchase_amount) VALUES (?, ?, ?)";
       const [purchaseItemResult] = await connection.query(purchaseItemQuery, [
@@ -260,22 +260,23 @@ app.post("/addCustomer", authenticateJWT, async (req, res) => {
 app.post("/handleCustomersByItem", async (req, res) => {
   try {
     const { item_name, message } = req.body;
+    
 
     if (!item_name) {
       return res.status(400).json("Item name is required");
     }
 
-    // SQL query to get customers who purchased the specified item
+
     const query = `
       SELECT c.Customer_id, c.Customer_name, c.Customer_email, p.Purchase_id, i.Item_name
       FROM Customer c
       JOIN Purchase p ON c.Customer_id = p.Customer_id
-      JOIN Purchase_item pi ON p.Purchase_id = pi.Purchase_item_id
+      JOIN Purchase_item pi ON p.Purchase_id = pi.Purchase_id
       JOIN Item i ON pi.Item_id = i.Item_id
       WHERE i.Item_name = ?;
     `;
 
-    // Fetch customers
+
     const [customers] = await connection.query(query, [item_name]);
 
     if (customers.length === 0) {
@@ -295,11 +296,11 @@ app.post("/handleCustomersByItem", async (req, res) => {
       },
     });
     
-    // Function to send emails
+
     const emailPromises = customers.map((customer) => {
       const email = customer.Customer_email;
 
-      // Validate email
+
       if (!isValidEmail(email)) {
         console.error(`Invalid email found: ${email}`);
         return Promise.resolve();
@@ -313,6 +314,7 @@ app.post("/handleCustomersByItem", async (req, res) => {
       };
 
       console.log(`Sending email to: ${email}`);
+      console.log(message)
       console.log(mailOptions);
 
       return transporter
@@ -321,10 +323,10 @@ app.post("/handleCustomersByItem", async (req, res) => {
         .catch((err) => console.error("Error sending email: ", err));
     });
 
-    // Wait for all emails to be sent
+    
     await Promise.all(emailPromises);
 
-    // Respond with success message
+    
     res.status(200).json("Emails sent to all customers successfully!");
   } catch (err) {
     console.error("Error handling customers: ", err);
@@ -340,6 +342,8 @@ app.post("/handleCustomersByItem", async (req, res) => {
 // app.get('/Dashboard', authenticateJWT, (req,res) => {
 //   return res.status(200).json("OKKK");
 // })
+
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
