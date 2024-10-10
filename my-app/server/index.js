@@ -259,7 +259,7 @@ app.post("/addCustomer", authenticateJWT, async (req, res) => {
 
 app.post("/handleCustomersByItem", async (req, res) => {
   try {
-    const { item_name } = req.body;
+    const { item_name, message } = req.body;
 
     if (!item_name) {
       return res.status(400).json("Item name is required");
@@ -309,7 +309,7 @@ app.post("/handleCustomersByItem", async (req, res) => {
         from: "justforchess247@gmail.com",
         to: email,
         subject: `Thank you for purchasing ${item_name}`,
-        text: `Dear ${customer.Customer_name},\n\nThank you for purchasing ${item_name}! We hope you enjoy the product.\n\nBest regards,\nYour Company`,
+        text: message
       };
 
       console.log(`Sending email to: ${email}`);
